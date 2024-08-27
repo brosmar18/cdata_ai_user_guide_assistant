@@ -1,17 +1,50 @@
+"use client";
+
 import Navbar from "@/components/Navbar";
+import { userThread } from "@prisma/client";
+import axios from "axios";
+import { useEffect, useState } from "react";
 
 
+export default function AppLayout({ children } : { children: React.ReactNode }) {
+  const [userThread, setUserThread] = useState<userThread | null>(null);
 
-export default function AppLayout({
-    children,
-  }: Readonly<{
-    children: React.ReactNode;
-  }>) {
-    return (
-        <div className="flex flex-col w-full h-full">
-          <Navbar />
-            {children}
-        </div>
-    );
-  }
+  useEffect(() => {
+
+    async function getUserThread() {
+      try {
   
+        const response = await axios.get<{
+          success: boolean;
+          message?: string;
+          userThread: userThread;
+        }>("/api/user-thread");
+  
+        if (!response.data.success || !response.data.userThread) {
+          console.error(response.data.message ?? "unknown error.");
+          setUserThread(null);
+          return;
+        }
+
+        setUserThread(response.data.userThread);
+
+
+      } catch (error) {
+        console.error(error);
+        setUserThread(null)
+      }
+
+      getUserThread();
+    }
+  }, [])
+
+  console.log("userThread", userThread);
+
+
+  return (
+    <div className="flex flex-col w-full h-full">
+      <Navbar />
+      {children}
+    </div>
+  )
+}

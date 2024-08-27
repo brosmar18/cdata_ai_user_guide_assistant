@@ -20,7 +20,7 @@ const Navbar = () => {
   const pathname = usePathname();
 
   return (
-    <div className="p-4 flex flex-row justify-between items-center">
+    <div className="p-4 flex flex-row justify-between items-center bg-black text-white">
       <Link href="/">
         <h1 className="text-2xl font-bold">CDATA AI</h1>
       </Link>
