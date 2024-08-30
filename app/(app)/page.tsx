@@ -206,8 +206,8 @@ function ChatPage() {
   }
 
   return (
-    <div className="w-screen h-[calc(100vh-64px)] flex flex-col bg-gray-700 text-white">
-      <div className="flex-grow overflow-y-auto p-4 space-y-3">
+    <div className="w-full h-[calc(100vh-64px)] flex flex-col bg-gray-700 text-white p-4 sm:p-6 md:p-8">
+      <div className="flex-grow overflow-y-auto mb-4 p-4 bg-gray-800 rounded-lg shadow-lg">
         {messages.length === 0 ? (
           <div className="text-center font-bold text-gray-300">
             No messages yet. Start the conversation!
@@ -216,28 +216,24 @@ function ChatPage() {
           messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${
+              className={`flex mb-4 ${
                 ["true", "True"].includes(message.metadata?.fromUser ?? "")
                   ? "justify-end"
                   : "justify-start"
               }`}
             >
               <div
-                className={`inline-block px-3 py-2 rounded-lg ${
+                className={`px-4 py-2 rounded-lg shadow-md max-w-[80%] sm:max-w-[70%] ${
                   ["true", "True"].includes(message.metadata?.fromUser ?? "")
                     ? "bg-green-500 text-gray-800"
-                    : "bg-gray-800 text-white"
+                    : "bg-gray-600 text-white"
                 }`}
-                style={{
-                  boxShadow: `0px 1px 2px rgba(0, 0, 0, 0.1), 0px 2px 4px rgba(0, 0, 0, 0.1)`,
-                  maxWidth: "80%",
-                }}
               >
                 {message.content.length > 0 && message.content[0].type === "text"
                   ? message.content[0].text.value
                       .split("\n")
                       .map((text, index) => (
-                        <p key={index} className="mb-1 last:mb-0 break-words">
+                        <p key={index} className="mb-1 last:mb-0">
                           {text}
                         </p>
                       ))
@@ -248,11 +244,11 @@ function ChatPage() {
         )}
         <div ref={messagesEndRef} />
       </div>
-      <div className="py-4 px-4 bg-gray-800 shadow-inner">
-        <div className="flex items-center bg-white p-2 rounded-full shadow-md">
+      <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
+        <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
           <input
             type="text"
-            className="flex-grow bg-transparent text-black placeholder-gray-500 focus:outline-none px-3"
+            className="w-full sm:flex-grow bg-white text-black placeholder-gray-500 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-inner"
             placeholder="Type a message..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -260,7 +256,7 @@ function ChatPage() {
           />
           <button
             disabled={!userThread?.threadId || !assistant || sending || !message.trim()}
-            className="ml-2 bg-green-500 text-white px-4 py-1 rounded-full shadow-md focus:outline-none disabled:bg-green-700 hover:bg-green-600 transition duration-300 ease-in-out text-sm"
+            className="w-full sm:w-auto bg-green-500 text-white px-6 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 disabled:bg-green-700 hover:bg-green-600 transition duration-300 ease-in-out shadow-md"
             onClick={sendMessage}
           >
             {sending ? "Sending..." : pollingRun ? "..." : "Send"}
