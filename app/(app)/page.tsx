@@ -17,7 +17,7 @@ const POLLING_FREQUENCY_MS = 1000;
 
 function ChatPage() {
   const [userThread] = useAtom(userThreadAtom);
-  const [assistant] = useAtom(assistantAtom)
+  const [assistant] = useAtom(assistantAtom);
 
   // State
   const [fetching, setFetching] = useState(false);
@@ -117,7 +117,7 @@ function ChatPage() {
       return "";
     }
   };
-  
+
   const pollRunStatus = async (threadId: string, runId: string) => {
     // api/run/retrieve
     setPollingRun(true);
@@ -164,7 +164,7 @@ function ChatPage() {
     // Clean up on unmount
     return () => clearInterval(intervalId);
   };
-  
+
   const sendMessage = async () => {
     // Validation
     if (!userThread || sending || !assistant) {
@@ -199,10 +199,9 @@ function ChatPage() {
       setMessage("");
       toast.success("Message sent.");
 
-      // TODO: Start a run 
+      // TODO: Start a run
       const runId = await startRun(userThread.threadId, assistant.assistantId);
-      pollRunStatus(userThread.threadId, runId)
-    
+      pollRunStatus(userThread.threadId, runId);
     } catch (error) {
       console.error(error);
       toast.error("Failed to send message. Please try again.");
@@ -211,10 +210,11 @@ function ChatPage() {
     }
   };
 
-
   return (
     <div className="w-screen h-[calc(100vh-64px)] flex flex-col bg-black text-white">
-      <div className="flex-grow overflow-y-hidden p-8 space-y-2">
+      <div className="flex-grow overflow-y-auto p-8 space-y-2">
+        {" "}
+        {/* Updated this line */}
         {fetching && messages.length === 0 && (
           <div className="text-center font-bold">fetching...</div>
         )}
@@ -248,14 +248,14 @@ function ChatPage() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
-           <button
+          <button
             disabled={
               !userThread?.threadId || !assistant || sending || !message.trim()
             }
             className="ml-4 bg-yellow-500 text-white px-4 py-2 rounded-full focus:outline-none disabled:bg-yellow-700"
             onClick={sendMessage}
           >
-            {sending ? "Sending..." : pollingRun ? "Polling Run..." : "Send"}
+            {sending ? "Sending..." : pollingRun ? "Fetching Response..." : "Send"}
           </button>
         </div>
       </div>
