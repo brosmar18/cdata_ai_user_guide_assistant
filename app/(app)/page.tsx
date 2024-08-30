@@ -194,56 +194,63 @@ function ChatPage() {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-gray-700 text-white">
         <div className="text-center">
-          <div className="text-2xl font-bold">Loading messages...</div>
+          <div className="text-2xl font-bold mb-4">Loading messages...</div>
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-green-500 border-opacity-75"></div>
         </div>
       </div>
     );
   }
-
+  
   return (
     <div className="w-screen h-[calc(100vh-64px)] flex flex-col bg-gray-700 text-white">
-      <div className="flex-grow overflow-y-auto p-8 space-y-2">
-        {messages.length === 0 ? (
-          <div className="text-center font-bold text-gray-300">No messages yet. Start the conversation!</div>
-        ) : (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={`px-4 py-2 mb-3 rounded-lg w-fit text-lg ${
-                ["true", "True"].includes(message.metadata?.fromUser ?? "")
-                  ? "bg-green-500 ml-auto"
-                  : "bg-navy-500"
-              }`}
-            >
-              {message.content.length > 0 && message.content[0].type === "text"
-                ? message.content[0].text.value
-                    .split("\n")
-                    .map((text, index) => <p key={index}>{text}</p>)
-                : null}
-            </div>
-          ))
-        )}
-      </div>
-      <div className="mt-auto p-4 bg-gray-800">
-        <div className="flex items-center bg-white p-2 rounded-md">
-          <input
-            type="text"
-            className="flex-grow bg-transparent text-black focus:outline-none"
-            placeholder="Type a message..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown} // Add the keydown event handler here
-          />
-          <button
-            disabled={!userThread?.threadId || !assistant || sending || !message.trim()}
-            className="ml-4 bg-green-500 text-white px-4 py-2 rounded-full focus:outline-none disabled:bg-green-700"
-            onClick={sendMessage}
-          >
-            {sending ? "Sending..." : pollingRun ? "Fetching Response..." : "Send"}
-          </button>
+    <div className="flex-grow overflow-y-auto p-8 space-y-4"> {/* Increased spacing between messages */}
+      {messages.length === 0 ? (
+        <div className="text-center font-bold text-gray-300">
+          No messages yet. Start the conversation!
         </div>
+      ) : (
+        messages.map((message) => (
+          <div
+            key={message.id}
+            className={`px-6 py-4 mb-3 rounded-xl w-fit text-lg shadow-lg ${
+              ["true", "True"].includes(message.metadata?.fromUser ?? "")
+                ? "bg-green-500 ml-auto text-gray-800"
+                : "bg-gray-800 text-white"
+            }`}
+            style={{
+              boxShadow: `0px 4px 6px rgba(0, 0, 0, 0.1), 0px 8px 10px rgba(0, 0, 0, 0.1)`,
+            }}
+          >
+            {message.content.length > 0 && message.content[0].type === "text"
+              ? message.content[0].text.value
+                  .split("\n")
+                  .map((text, index) => <p key={index}>{text}</p>)
+              : null}
+          </div>
+        ))
+      )}
+    </div>
+    <div className="mt-auto p-4 bg-gray-800 shadow-inner"> {/* Added inner shadow to input container */}
+      <div className="flex items-center bg-white p-3 rounded-full shadow-md"> {/* Enhanced input styling */}
+        <input
+          type="text"
+          className="flex-grow bg-transparent text-black placeholder-gray-500 focus:outline-none"
+          placeholder="Type a message..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown} // Add the keydown event handler here
+        />
+        <button
+          disabled={!userThread?.threadId || !assistant || sending || !message.trim()}
+          className="ml-4 bg-green-500 text-white px-6 py-2 rounded-full shadow-md focus:outline-none disabled:bg-green-700 hover:bg-green-600 transition duration-300 ease-in-out"
+          onClick={sendMessage}
+        >
+          {sending ? "Sending..." : pollingRun ? "Fetching Response..." : "Send"}
+        </button>
       </div>
     </div>
+  </div>
+  
   );
 }
 
