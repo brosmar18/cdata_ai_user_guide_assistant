@@ -2,7 +2,7 @@
 import { assistantAtom, userThreadAtom } from "@/atoms";
 import axios from "axios";
 import { useAtom } from "jotai";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 
 interface Message {
@@ -12,7 +12,8 @@ interface Message {
   metadata?: { fromUser?: string };
 }
 
-const POLLING_FREQUENCY_MS = 1000;
+// Increased polling frequency to reduce API calls
+const POLLING_FREQUENCY_MS = 5000;
 
 function ChatPage() {
   const [userThread] = useAtom(userThreadAtom);
@@ -23,6 +24,8 @@ function ChatPage() {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [pollingRun, setPollingRun] = useState(false);
+
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchMessages = useCallback(async () => {
     if (!userThread) {
@@ -68,11 +71,15 @@ function ChatPage() {
 
     fetchAndSetMessages();
 
-    const intervalId = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       fetchAndSetMessages();
     }, POLLING_FREQUENCY_MS);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, [fetchMessages]);
 
   const startRun = async (threadId: string, assistantId: string): Promise<string> => {
@@ -100,7 +107,7 @@ function ChatPage() {
   const pollRunStatus = async (threadId: string, runId: string) => {
     setPollingRun(true);
 
-    const intervalId = setInterval(async () => {
+    const pollStatus = async () => {
       try {
         const response = await axios.post<{
           success: boolean;
@@ -115,22 +122,22 @@ function ChatPage() {
         }
 
         if (response.data.run.status === "completed") {
-          clearInterval(intervalId);
+          clearInterval(intervalRef.current!);
           setPollingRun(false);
           fetchMessages();
         } else if (response.data.run.status === "failed") {
-          clearInterval(intervalId);
+          clearInterval(intervalRef.current!);
           setPollingRun(false);
           toast.error("Run failed.");
         }
       } catch (error) {
         console.error("Failed to poll run status:", error);
         toast.error("Failed to poll run status.");
-        clearInterval(intervalId);
+        clearInterval(intervalRef.current!);
       }
-    }, POLLING_FREQUENCY_MS);
+    };
 
-    return () => clearInterval(intervalId);
+    intervalRef.current = setInterval(pollStatus, POLLING_FREQUENCY_MS);
   };
 
   const sendMessage = async () => {
