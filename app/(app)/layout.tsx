@@ -1,25 +1,54 @@
 "use client";
 
-import { userThreadAtom } from "@/atoms";
+import { assistantAtom, userThreadAtom } from "@/atoms";
 import Navbar from "@/components/Navbar";
-import { userThread } from "@prisma/client";
+import { Assistant, UserThread } from "@prisma/client";
 import axios from "axios";
 import { useAtom } from "jotai";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [, setUserThread] = useAtom(userThreadAtom);
+  const [assistant, setAssistant] = useAtom(assistantAtom);
 
-  // TODO: If the user doesn't have threadID, we make one.
-  // If the user does have one, we fetch it.
+  useEffect(() => {
+    if (assistant) return;
+
+    async function getAssistant() {
+      try {
+        const response = await axios.get<{
+          success: boolean;
+          message?: string;
+          assistant: Assistant;
+        }>("/api/assistant");
+
+        if (!response.data.success || !response.data.assistant) {
+          console.error(response.data.message ?? "Unknown error.");
+          toast.error("Failed to fetch assistant.");
+          setAssistant(null);
+          return;
+        }
+
+        setAssistant(response.data.assistant);
+      } catch (error) {
+        console.error(error);
+        setAssistant(null);
+      }
+    }
+
+    getAssistant(); // Call the getAssistant function
+  }, [assistant, setAssistant]);
 
   useEffect(() => {
     async function getUserThread() {
       try {
         // Fetch the userThread from our API
-        const response = await axios.get<{ success: boolean; message?: string; userThread: userThread }>(
-          "/api/user-thread"
-        );
+        const response = await axios.get<{
+          success: boolean;
+          message?: string;
+          userThread: UserThread;
+        }>("/api/user-thread");
 
         if (!response.data.success || !response.data.userThread) {
           console.error(response.data.message ?? "Unknown error.");
@@ -37,8 +66,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     getUserThread(); // Call the function to fetch or create the userThread
   }, [setUserThread]);
 
-
-
   return (
     <div className="flex flex-col w-full h-full">
       <Navbar />
@@ -46,5 +73,3 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
-// Going to use the threadID to fetch all messages.

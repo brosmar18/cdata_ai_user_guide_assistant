@@ -1,8 +1,10 @@
 "use client";
-import { userThreadAtom } from "@/atoms";
+import { assistantAtom, userThreadAtom } from "@/atoms";
 import axios from "axios";
 import { useAtom } from "jotai";
 import { useCallback, useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { threadId } from "worker_threads";
 
 interface Message {
   id: string;
@@ -15,10 +17,16 @@ const POLLING_FREQUENCY_MS = 1000;
 
 function ChatPage() {
   const [userThread] = useAtom(userThreadAtom);
+  const [assistant] = useAtom(assistantAtom)
 
   // State
   const [fetching, setFetching] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [pollingRun, setPollingRun] = useState(false);
+
+  console.log("Message", message);
 
   console.log("UserThread", userThread);
 
@@ -52,7 +60,7 @@ function ChatPage() {
       newMessages = newMessages
         .sort((a: Message, b: Message) => {
           return (
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
           );
         })
         .filter(
@@ -79,8 +87,133 @@ function ChatPage() {
     return () => clearInterval(intervalId);
   }, [fetchMessages]);
 
+  const startRun = async (
+    threadId: string,
+    assistantId: string
+  ): Promise<string> => {
+    // api/run/create
+    try {
+      const {
+        data: { success, run, error },
+      } = await axios.post<{
+        success: boolean;
+        error?: string;
+        run?: any;
+      }>("api/run/create", {
+        threadId,
+        assistantId,
+      });
+
+      if (!success || !run) {
+        console.error(error);
+        toast.error("Failed to start run.");
+        return "";
+      }
+
+      return run.id;
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to start run.");
+      return "";
+    }
+  };
+  
+  const pollRunStatus = async (threadId: string, runId: string) => {
+    // api/run/retrieve
+    setPollingRun(true);
+
+    const intervalId = setInterval(async () => {
+      try {
+        const {
+          data: { run, success, error },
+        } = await axios.post<{
+          success: boolean;
+          error?: string;
+          run?: any;
+        }>("api/run/retrieve", {
+          threadId,
+          runId,
+        });
+
+        if (!success || !run) {
+          console.error(error);
+          toast.error("Failed to poll run status.");
+          return;
+        }
+
+        console.log("run", run);
+
+        if (run.status === "completed") {
+          clearInterval(intervalId);
+          setPollingRun(false);
+          fetchMessages();
+          return;
+        } else if (run.status === "failed") {
+          clearInterval(intervalId);
+          setPollingRun(false);
+          toast.error("Run failed.");
+          return;
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to poll run status.");
+        clearInterval(intervalId);
+      }
+    }, POLLING_FREQUENCY_MS);
+
+    // Clean up on unmount
+    return () => clearInterval(intervalId);
+  };
+  
+  const sendMessage = async () => {
+    // Validation
+    if (!userThread || sending || !assistant) {
+      toast.error("Failed to send message. Invalid state.");
+      return;
+    }
+
+    setSending(true);
+
+    // Send message /api/message/create
+    try {
+      const {
+        data: { message: newMessages },
+      } = await axios.post<{
+        success: boolean;
+        message?: any;
+        error?: string;
+      }>("/api/message/create", {
+        message,
+        threadId: userThread.threadId,
+        fromUser: "true",
+      });
+
+      // Update ours messages with our new response
+      if (!newMessages) {
+        console.error("No message returned.");
+        toast.error("Failed to send message. Please try again.");
+        return;
+      }
+
+      setMessages((prev) => [...prev, newMessages]);
+      setMessage("");
+      toast.success("Message sent.");
+
+      // TODO: Start a run 
+      const runId = await startRun(userThread.threadId, assistant.assistantId);
+      pollRunStatus(userThread.threadId, runId)
+    
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to send message. Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+
   return (
-    <div className="w-screen h-full flex flex-col bg-black text-white">
+    <div className="w-screen h-[calc(100vh-64px)] flex flex-col bg-black text-white">
       <div className="flex-grow overflow-y-hidden p-8 space-y-2">
         {fetching && messages.length === 0 && (
           <div className="text-center font-bold">fetching...</div>
@@ -92,9 +225,7 @@ function ChatPage() {
           <div
             key={message.id}
             className={`px-4 py-2 mb-3 rounded-lg w-fit text-lg ${
-              ["true", "True"].includes(
-                message.metadata?.fromUser ?? ""
-              )
+              ["true", "True"].includes(message.metadata?.fromUser ?? "")
                 ? "bg-yellow-500 ml-auto"
                 : "bg-gray-700"
             }`}
@@ -107,7 +238,27 @@ function ChatPage() {
           </div>
         ))}
       </div>
-      {/* TODO: Input */}
+      {/* Input field */}
+      <div className="mt-auto p-4 bg-gray-800">
+        <div className="flex items-center bg-white p-2 rounded-md">
+          <input
+            type="text"
+            className="flex-grow bg-transparent text-black focus:outline-none"
+            placeholder="Type a message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+           <button
+            disabled={
+              !userThread?.threadId || !assistant || sending || !message.trim()
+            }
+            className="ml-4 bg-yellow-500 text-white px-4 py-2 rounded-full focus:outline-none disabled:bg-yellow-700"
+            onClick={sendMessage}
+          >
+            {sending ? "Sending..." : pollingRun ? "Polling Run..." : "Send"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
