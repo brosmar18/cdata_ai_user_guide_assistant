@@ -176,6 +176,13 @@ function ChatPage() {
     }
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault(); // Prevent form submission or other default behavior
+      sendMessage(); // Trigger the sendMessage function when Enter is pressed
+    }
+  };
+
   if (loading) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-black text-white">
@@ -218,6 +225,7 @@ function ChatPage() {
             placeholder="Type a message..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown} // Add the keydown event handler here
           />
           <button
             disabled={!userThread?.threadId || !assistant || sending || !message.trim()}
