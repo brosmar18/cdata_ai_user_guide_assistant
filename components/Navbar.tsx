@@ -20,9 +20,9 @@ const Navbar = () => {
   const pathname = usePathname();
 
   return (
-    <div className="p-4 flex flex-row justify-between items-center bg-black text-white">
+    <div className="p-4 flex flex-row justify-between items-center bg-gray-700 text-white">
       <Link href="/">
-        <h1 className="text-2xl font-bold">CDATA AI</h1>
+        <h1 className="text-2xl font-bold text-green-500">CDATA AI</h1> 
       </Link>
       <div className="flex gap-x-6 text-lg items-center">
         {routes.map((route, idx) => (
@@ -30,7 +30,9 @@ const Navbar = () => {
             key={idx}
             href={route.path}
             className={
-              pathname === route.path ? "border-b-2 border-yellow-500" : ""
+              pathname === route.path
+                ? "border-b-2 border-green-500 text-green-500" 
+                : "text-gray-300 hover:text-white"
             }
           >
             {route.name}

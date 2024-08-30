@@ -185,7 +185,7 @@ function ChatPage() {
 
   if (loading) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-black text-white">
+      <div className="w-screen h-screen flex items-center justify-center bg-gray-700 text-white">
         <div className="text-center">
           <div className="text-2xl font-bold">Loading messages...</div>
         </div>
@@ -194,18 +194,18 @@ function ChatPage() {
   }
 
   return (
-    <div className="w-screen h-[calc(100vh-64px)] flex flex-col bg-black text-white">
+    <div className="w-screen h-[calc(100vh-64px)] flex flex-col bg-gray-700 text-white">
       <div className="flex-grow overflow-y-auto p-8 space-y-2">
         {messages.length === 0 ? (
-          <div className="text-center font-bold">No messages yet. Start the conversation!</div>
+          <div className="text-center font-bold text-gray-300">No messages yet. Start the conversation!</div>
         ) : (
           messages.map((message) => (
             <div
               key={message.id}
               className={`px-4 py-2 mb-3 rounded-lg w-fit text-lg ${
                 ["true", "True"].includes(message.metadata?.fromUser ?? "")
-                  ? "bg-yellow-500 ml-auto"
-                  : "bg-gray-700"
+                  ? "bg-green-500 ml-auto"
+                  : "bg-navy-500"
               }`}
             >
               {message.content.length > 0 && message.content[0].type === "text"
@@ -229,7 +229,7 @@ function ChatPage() {
           />
           <button
             disabled={!userThread?.threadId || !assistant || sending || !message.trim()}
-            className="ml-4 bg-yellow-500 text-white px-4 py-2 rounded-full focus:outline-none disabled:bg-yellow-700"
+            className="ml-4 bg-green-500 text-white px-4 py-2 rounded-full focus:outline-none disabled:bg-green-700"
             onClick={sendMessage}
           >
             {sending ? "Sending..." : pollingRun ? "Fetching Response..." : "Send"}
