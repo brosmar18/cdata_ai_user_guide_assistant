@@ -158,7 +158,11 @@ function ChatPage() {
         return;
       }
 
-      setMessages((prev) => [...prev, response.data.message]);
+      const newMessage = response.data.message;
+      if (newMessage) {
+        setMessages((prev) => [...prev, newMessage]); // Ensure only valid Message objects are added
+      }
+
       setMessage("");
       toast.success("Message sent.");
 
