@@ -12,7 +12,6 @@ interface Message {
   metadata?: { fromUser?: string };
 }
 
-// Increased polling frequency to reduce API calls
 const POLLING_FREQUENCY_MS = 5000;
 
 function ChatPage() {
@@ -26,6 +25,7 @@ function ChatPage() {
   const [pollingRun, setPollingRun] = useState(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchMessages = useCallback(async () => {
     if (!userThread) {
@@ -81,6 +81,10 @@ function ChatPage() {
       }
     };
   }, [fetchMessages]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const startRun = async (threadId: string, assistantId: string): Promise<string> => {
     try {
@@ -167,7 +171,7 @@ function ChatPage() {
 
       const newMessage = response.data.message;
       if (newMessage) {
-        setMessages((prev) => [...prev, newMessage]); // Ensure only valid Message objects are added
+        setMessages((prev) => [...prev, newMessage]);
       }
 
       setMessage("");
@@ -185,8 +189,8 @@ function ChatPage() {
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
-      event.preventDefault(); // Prevent form submission or other default behavior
-      sendMessage(); // Trigger the sendMessage function when Enter is pressed
+      event.preventDefault();
+      sendMessage();
     }
   };
 
@@ -200,57 +204,70 @@ function ChatPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="w-screen h-[calc(100vh-64px)] flex flex-col bg-gray-700 text-white">
-    <div className="flex-grow overflow-y-auto p-8 space-y-4"> {/* Increased spacing between messages */}
-      {messages.length === 0 ? (
-        <div className="text-center font-bold text-gray-300">
-          No messages yet. Start the conversation!
-        </div>
-      ) : (
-        messages.map((message) => (
-          <div
-            key={message.id}
-            className={`px-6 py-4 mb-3 rounded-xl w-fit text-lg shadow-lg ${
-              ["true", "True"].includes(message.metadata?.fromUser ?? "")
-                ? "bg-green-500 ml-auto text-gray-800"
-                : "bg-gray-800 text-white"
-            }`}
-            style={{
-              boxShadow: `0px 4px 6px rgba(0, 0, 0, 0.1), 0px 8px 10px rgba(0, 0, 0, 0.1)`,
-            }}
-          >
-            {message.content.length > 0 && message.content[0].type === "text"
-              ? message.content[0].text.value
-                  .split("\n")
-                  .map((text, index) => <p key={index}>{text}</p>)
-              : null}
+      <div className="flex-grow overflow-y-auto p-4 space-y-3">
+        {messages.length === 0 ? (
+          <div className="text-center font-bold text-gray-300">
+            No messages yet. Start the conversation!
           </div>
-        ))
-      )}
-    </div>
-    <div className="mt-auto p-4 bg-gray-800 shadow-inner"> {/* Added inner shadow to input container */}
-      <div className="flex items-center bg-white p-3 rounded-full shadow-md"> {/* Enhanced input styling */}
-        <input
-          type="text"
-          className="flex-grow bg-transparent text-black placeholder-gray-500 focus:outline-none"
-          placeholder="Type a message..."
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown} // Add the keydown event handler here
-        />
-        <button
-          disabled={!userThread?.threadId || !assistant || sending || !message.trim()}
-          className="ml-4 bg-green-500 text-white px-6 py-2 rounded-full shadow-md focus:outline-none disabled:bg-green-700 hover:bg-green-600 transition duration-300 ease-in-out"
-          onClick={sendMessage}
-        >
-          {sending ? "Sending..." : pollingRun ? "Fetching Response..." : "Send"}
-        </button>
+        ) : (
+          messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${
+                ["true", "True"].includes(message.metadata?.fromUser ?? "")
+                  ? "justify-end"
+                  : "justify-start"
+              }`}
+            >
+              <div
+                className={`inline-block px-3 py-2 rounded-lg ${
+                  ["true", "True"].includes(message.metadata?.fromUser ?? "")
+                    ? "bg-green-500 text-gray-800"
+                    : "bg-gray-800 text-white"
+                }`}
+                style={{
+                  boxShadow: `0px 1px 2px rgba(0, 0, 0, 0.1), 0px 2px 4px rgba(0, 0, 0, 0.1)`,
+                  maxWidth: "80%",
+                }}
+              >
+                {message.content.length > 0 && message.content[0].type === "text"
+                  ? message.content[0].text.value
+                      .split("\n")
+                      .map((text, index) => (
+                        <p key={index} className="mb-1 last:mb-0 break-words">
+                          {text}
+                        </p>
+                      ))
+                  : null}
+              </div>
+            </div>
+          ))
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+      <div className="py-4 px-4 bg-gray-800 shadow-inner">
+        <div className="flex items-center bg-white p-2 rounded-full shadow-md">
+          <input
+            type="text"
+            className="flex-grow bg-transparent text-black placeholder-gray-500 focus:outline-none px-3"
+            placeholder="Type a message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <button
+            disabled={!userThread?.threadId || !assistant || sending || !message.trim()}
+            className="ml-2 bg-green-500 text-white px-4 py-1 rounded-full shadow-md focus:outline-none disabled:bg-green-700 hover:bg-green-600 transition duration-300 ease-in-out text-sm"
+            onClick={sendMessage}
+          >
+            {sending ? "Sending..." : pollingRun ? "..." : "Send"}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-  
   );
 }
 
