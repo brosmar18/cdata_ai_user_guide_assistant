@@ -5,6 +5,7 @@ import { useAtom } from "jotai";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
+
 interface Message {
   id: string;
   created_at: string;
@@ -26,6 +27,7 @@ function ChatPage() {
   const [pollingRun, setPollingRun] = useState(false);
 
   console.log("Message", message);
+
   console.log("UserThread", userThread);
 
   const fetchMessages = useCallback(async () => {
@@ -57,7 +59,9 @@ function ChatPage() {
 
       newMessages = newMessages
         .sort((a: Message, b: Message) => {
-          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          return (
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
         })
         .filter(
           (message: Message) =>
@@ -87,6 +91,7 @@ function ChatPage() {
     threadId: string,
     assistantId: string
   ): Promise<string> => {
+    // api/run/create
     try {
       const {
         data: { success, run, error },
@@ -114,6 +119,7 @@ function ChatPage() {
   };
 
   const pollRunStatus = async (threadId: string, runId: string) => {
+    // api/run/retrieve
     setPollingRun(true);
 
     const intervalId = setInterval(async () => {
@@ -155,10 +161,12 @@ function ChatPage() {
       }
     }, POLLING_FREQUENCY_MS);
 
+    // Clean up on unmount
     return () => clearInterval(intervalId);
   };
 
   const sendMessage = async () => {
+    // Validation
     if (!userThread || sending || !assistant) {
       toast.error("Failed to send message. Invalid state.");
       return;
@@ -166,9 +174,10 @@ function ChatPage() {
 
     setSending(true);
 
+    // Send message /api/message/create
     try {
       const {
-        data: { message: newMessage },
+        data: { message: newMessages },
       } = await axios.post<{
         success: boolean;
         message?: any;
@@ -179,16 +188,18 @@ function ChatPage() {
         fromUser: "true",
       });
 
-      if (!newMessage) {
+      // Update ours messages with our new response
+      if (!newMessages) {
         console.error("No message returned.");
         toast.error("Failed to send message. Please try again.");
         return;
       }
 
-      setMessages((prev) => [...prev, newMessage]);
+      setMessages((prev) => [...prev, newMessages]);
       setMessage("");
       toast.success("Message sent.");
 
+      // TODO: Start a run
       const runId = await startRun(userThread.threadId, assistant.assistantId);
       pollRunStatus(userThread.threadId, runId);
     } catch (error) {
@@ -202,10 +213,12 @@ function ChatPage() {
   return (
     <div className="w-screen h-[calc(100vh-64px)] flex flex-col bg-black text-white">
       <div className="flex-grow overflow-y-auto p-8 space-y-2">
-        {!sending && !pollingRun && fetching && messages.length === 0 && (
+        {" "}
+        {/* Updated this line */}
+        {fetching && messages.length === 0 && (
           <div className="text-center font-bold">fetching...</div>
         )}
-        {!sending && !pollingRun && messages.length === 0 && !fetching && (
+        {messages.length === 0 && !fetching && (
           <div className="text-center font-bold">No Messages.</div>
         )}
         {messages.map((message) => (
@@ -225,6 +238,7 @@ function ChatPage() {
           </div>
         ))}
       </div>
+      {/* Input field */}
       <div className="mt-auto p-4 bg-gray-800">
         <div className="flex items-center bg-white p-2 rounded-md">
           <input
