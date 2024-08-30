@@ -1,34 +1,50 @@
+import { prismadb } from "@/lib/prismadb";
 import { currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { supabase } from "@/supabaseClient";
+import OpenAI from "openai";
 
 export async function GET() {
   const user = await currentUser();
 
   if (!user) {
     return NextResponse.json(
-      { success: false, message: "unauthorized" },
+      { success: false, message: "Unauthorized" },
       { status: 401 }
     );
   }
 
-  // Get user threads from the database using Supabase
-  const { data: userThread, error } = await supabase
-    .from("userThread")
-    .select("*")
-    .eq("userID", user.id)
-    .single();
-
-  if (error || !userThread) {
-    return NextResponse.json(
-        { success: false, message: error?.message || "User thread not found "},
-        {status: 404}
-    );
+  // Get user thread from database.
+  const userThread = await prismadb.userThread.findUnique({
+    where: { userId: user.id},
+  });
+  // If the thread exists, return it.
+  if (userThread) {
+    return NextResponse.json({ userThread, success: true }, { status: 200 });
   }
 
-  // if it does exist, return it.
-  return NextResponse.json(
-    { success: true, userThread},
-    { status: 200 }
-  )
+  try {
+    // If the thread doesn't exist, create it using OpenAI.
+    const openai = new OpenAI();
+    const thread = await openai.beta.threads.create();
+  
+    // Save the new thread to the database using Supabase
+    const newUserThread = await prismadb.userThread.create({
+      data: {
+        userId: user.id,
+        threadId: thread.id
+      },
+    });
+  
+    // Return the newly created thread
+    return NextResponse.json(
+      { userThread: newUserThread, success: true },
+      { status: 201 }
+    );
+  } catch (error) {
+  
+    return NextResponse.json(
+      { success: false, message: "Error creating thread" },
+      { status: 500 }
+    );
+  } 
 }
