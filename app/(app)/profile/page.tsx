@@ -41,7 +41,7 @@ function ProfilePage() {
 
   return (
     <div className="w-full min-h-[calc(100vh-64px)] bg-gray-800 text-white p-4 sm:p-6 md:p-8">
-      <div className="max-w-5xl mx-auto"> {/* Increased max-width */}
+      <div className="max-w-5xl mx-auto">
         <h1 className="text-4xl font-bold mb-8 text-green-400 text-center">Your Profile</h1>
         <div className="bg-gray-700 rounded-lg shadow-lg p-6 mb-8 transition-all duration-300 hover:shadow-xl">
           <div className="flex flex-col sm:flex-row items-center sm:items-start mb-6">
@@ -70,13 +70,14 @@ function ProfilePage() {
             </div>
           </div>
         </div>
-        <div className="bg-gray-700 rounded-lg shadow-lg p-8 transition-all duration-300 hover:shadow-xl flex flex-col items-center justify-center"> {/* Increased padding */}
+        <div className="bg-gray-700 rounded-lg shadow-lg p-8 transition-all duration-300 hover:shadow-xl">
           <h3 className="text-2xl font-semibold mb-4 text-green-400">Manage Your Account</h3>
           <p className="mb-6 text-gray-300">
             Use the form below to update your profile information or manage your account settings.
           </p>
-          <div className="bg-gray-800 p-4 rounded-lg shadow-inner"> {/* Added inner container */}
+          <div className="bg-gray-800 p-4 rounded-lg shadow-inner">
             <UserProfile
+              routing="hash"
               appearance={{
                 elements: {
                   rootBox: "bg-transparent",
