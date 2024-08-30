@@ -198,7 +198,7 @@ function ChatPage() {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-gray-700 text-white">
         <div className="text-center">
-          <div className="text-2xl font-bold mb-4">Loading messages...</div>
+          <div className="text-2xl font-bold mb-4">Loading...</div>
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-green-500 border-opacity-75"></div>
         </div>
       </div>
