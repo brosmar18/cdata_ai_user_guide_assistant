@@ -1,12 +1,14 @@
 "use client";
 
+import { userThreadAtom } from "@/atoms";
 import Navbar from "@/components/Navbar";
 import { userThread } from "@prisma/client";
 import axios from "axios";
+import { useAtom } from "jotai";
 import { useEffect, useState } from "react";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const [userThread, setUserThread] = useState<any | null>(null);
+  const [, setUserThread] = useAtom(userThreadAtom);
 
   // TODO: If the user doesn't have threadID, we make one.
   // If the user does have one, we fetch it.
@@ -33,9 +35,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
 
     getUserThread(); // Call the function to fetch or create the userThread
-  }, []);
+  }, [setUserThread]);
 
-  console.log("userThread", userThread);
+
 
   return (
     <div className="flex flex-col w-full h-full">
