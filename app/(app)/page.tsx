@@ -4,6 +4,8 @@ import axios from "axios";
 import { useAtom } from "jotai";
 import { useCallback, useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
+import SentMessage from "../../components/SentMessage";
+import ResponseMessage from "../../components/ResponseMessage";
 
 interface Message {
   id: string;
@@ -26,6 +28,7 @@ function ChatPage() {
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
 
   const fetchMessages = useCallback(async () => {
     if (!userThread) {
@@ -51,7 +54,7 @@ function ChatPage() {
         return;
       }
 
-      let newMessages = response.data.messages.sort((a, b) =>
+      const newMessages = response.data.messages.sort((a, b) =>
         new Date(a.created_at).getTime() > new Date(b.created_at).getTime() ? 1 : -1
       );
 
@@ -64,27 +67,44 @@ function ChatPage() {
     }
   }, [userThread]);
 
-  useEffect(() => {
-    const fetchAndSetMessages = async () => {
-      await fetchMessages();
-    };
+  // Polling run status
+  const pollRunStatus = async (threadId: string, runId: string) => {
+    setPollingRun(true);
 
-    fetchAndSetMessages();
+    const pollStatus = async () => {
+      try {
+        const response = await axios.post<{
+          success: boolean;
+          run?: any;
+          error?: string;
+        }>("/api/run/retrieve", { threadId, runId });
 
-    intervalRef.current = setInterval(() => {
-      fetchAndSetMessages();
-    }, POLLING_FREQUENCY_MS);
+        if (!response.data.success || !response.data.run) {
+          console.error(response.data.error);
+          toast.error("Failed to poll run status.");
+          return;
+        }
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+        if (response.data.run.status === "completed") {
+          clearInterval(intervalRef.current!);
+          setPollingRun(false);
+          fetchMessages(); // Fetch messages once the run is complete
+        } else if (response.data.run.status === "failed") {
+          clearInterval(intervalRef.current!);
+          setPollingRun(false);
+          toast.error("Run failed.");
+        }
+      } catch (error) {
+        console.error("Failed to poll run status:", error);
+        toast.error("Failed to poll run status.");
+        clearInterval(intervalRef.current!);
+        setPollingRun(false);
       }
     };
-  }, [fetchMessages]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    intervalRef.current = setInterval(pollStatus, POLLING_FREQUENCY_MS);
+  };
+
 
   const startRun = async (threadId: string, assistantId: string): Promise<string> => {
     try {
@@ -108,42 +128,7 @@ function ChatPage() {
     }
   };
 
-  const pollRunStatus = async (threadId: string, runId: string) => {
-    setPollingRun(true);
-
-    const pollStatus = async () => {
-      try {
-        const response = await axios.post<{
-          success: boolean;
-          run?: any;
-          error?: string;
-        }>("/api/run/retrieve", { threadId, runId });
-
-        if (!response.data.success || !response.data.run) {
-          console.error(response.data.error);
-          toast.error("Failed to poll run status.");
-          return;
-        }
-
-        if (response.data.run.status === "completed") {
-          clearInterval(intervalRef.current!);
-          setPollingRun(false);
-          fetchMessages();
-        } else if (response.data.run.status === "failed") {
-          clearInterval(intervalRef.current!);
-          setPollingRun(false);
-          toast.error("Run failed.");
-        }
-      } catch (error) {
-        console.error("Failed to poll run status:", error);
-        toast.error("Failed to poll run status.");
-        clearInterval(intervalRef.current!);
-      }
-    };
-
-    intervalRef.current = setInterval(pollStatus, POLLING_FREQUENCY_MS);
-  };
-
+  // Send message
   const sendMessage = async () => {
     if (!userThread || sending || !assistant || !message.trim()) {
       toast.error("Failed to send message. Invalid state.");
@@ -178,7 +163,9 @@ function ChatPage() {
       toast.success("Message sent.");
 
       const runId = await startRun(userThread.threadId, assistant.assistantId);
-      pollRunStatus(userThread.threadId, runId);
+      if (runId) {
+        pollRunStatus(userThread.threadId, runId); // Poll for responses after the run starts
+      }
     } catch (error) {
       console.error("Failed to send message:", error);
       toast.error("Failed to send message. Please try again.");
@@ -186,6 +173,15 @@ function ChatPage() {
       setSending(false);
     }
   };
+
+  useEffect(() => {
+    fetchMessages();
+    intervalRef.current = setInterval(fetchMessages, POLLING_FREQUENCY_MS);
+    return () => {
+      clearInterval(intervalRef.current!);
+    };
+  }, [fetchMessages]);
+
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
@@ -213,34 +209,19 @@ function ChatPage() {
             No messages yet. Start the conversation!
           </div>
         ) : (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex mb-4 ${
-                ["true", "True"].includes(message.metadata?.fromUser ?? "")
-                  ? "justify-end"
-                  : "justify-start"
-              }`}
-            >
-              <div
-                className={`px-4 py-2 rounded-lg shadow-md max-w-[80%] sm:max-w-[70%] ${
-                  ["true", "True"].includes(message.metadata?.fromUser ?? "")
-                    ? "bg-green-500 text-gray-800"
-                    : "bg-gray-600 text-white"
-                }`}
-              >
-                {message.content.length > 0 && message.content[0].type === "text"
-                  ? message.content[0].text.value
-                      .split("\n")
-                      .map((text, index) => (
-                        <p key={index} className="mb-1 last:mb-0">
-                          {text}
-                        </p>
-                      ))
-                  : null}
-              </div>
-            </div>
-          ))
+          messages.map((message) =>
+            ["true", "True"].includes(message.metadata?.fromUser ?? "") ? (
+              <SentMessage
+                key={message.id}
+                message={message.content[0]?.text?.value ?? ""}
+              />
+            ) : (
+              <ResponseMessage
+                key={message.id}
+                message={message.content[0]?.text?.value ?? ""}
+              />
+            )
+          )
         )}
         <div ref={messagesEndRef} />
       </div>
