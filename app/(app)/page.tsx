@@ -5,7 +5,7 @@ import { useAtom } from "jotai";
 import { useCallback, useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import SentMessage from "../../components/SentMessage";
-import ResponseMessage from "../../components/ResponseMessage";
+import ResponseMessage from "../../components/Response";
 
 interface Message {
   id: string;
@@ -28,7 +28,6 @@ function ChatPage() {
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
 
   const fetchMessages = useCallback(async () => {
     if (!userThread) {
@@ -55,7 +54,9 @@ function ChatPage() {
       }
 
       const newMessages = response.data.messages.sort((a, b) =>
-        new Date(a.created_at).getTime() > new Date(b.created_at).getTime() ? 1 : -1
+        new Date(a.created_at).getTime() > new Date(b.created_at).getTime()
+          ? 1
+          : -1
       );
 
       setMessages(newMessages);
@@ -105,8 +106,10 @@ function ChatPage() {
     intervalRef.current = setInterval(pollStatus, POLLING_FREQUENCY_MS);
   };
 
-
-  const startRun = async (threadId: string, assistantId: string): Promise<string> => {
+  const startRun = async (
+    threadId: string,
+    assistantId: string
+  ): Promise<string> => {
     try {
       const response = await axios.post<{
         success: boolean;
@@ -182,7 +185,6 @@ function ChatPage() {
     };
   }, [fetchMessages]);
 
-
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -210,15 +212,23 @@ function ChatPage() {
           </div>
         ) : (
           messages.map((message) =>
-            ["true", "True"].includes(message.metadata?.fromUser ?? "") ? (
+            message.metadata?.fromUser === "true" ? (
               <SentMessage
                 key={message.id}
                 message={message.content[0]?.text?.value ?? ""}
+                timestamp={new Date(message.created_at).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               />
             ) : (
               <ResponseMessage
                 key={message.id}
                 message={message.content[0]?.text?.value ?? ""}
+                timestamp={new Date(message.created_at).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               />
             )
           )
@@ -236,7 +246,9 @@ function ChatPage() {
             onKeyDown={handleKeyDown}
           />
           <button
-            disabled={!userThread?.threadId || !assistant || sending || !message.trim()}
+            disabled={
+              !userThread?.threadId || !assistant || sending || !message.trim()
+            }
             className="w-full sm:w-auto bg-green-500 text-white px-6 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 disabled:bg-green-700 hover:bg-green-600 transition duration-300 ease-in-out shadow-md"
             onClick={sendMessage}
           >
