@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     }
 
     const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY, // Ensure the API key is correctly set
+      apiKey: process.env.OPENAI_API_KEY,
     });
 
     // Only add metadata if it is relevant
@@ -24,10 +24,11 @@ export async function POST(req: Request) {
     const threadMessage = await openai.beta.threads.messages.create(threadId, {
       role: "user",
       content: message,
-      metadata,  // Pass metadata only if it exists
+      metadata,
     });
 
     console.log("Response from OpenAI:", threadMessage);
+
 
     return NextResponse.json(
       { message: threadMessage, success: true },

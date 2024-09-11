@@ -1,9 +1,8 @@
 interface SentMessageProps {
   message: string;
-  timestamp: string; 
 }
 
-function SentMessage({ message, timestamp }: SentMessageProps) {
+function SentMessage({ message }: SentMessageProps) {
   return (
     <div className="flex justify-end mb-6">
       <div className="flex flex-col items-end space-y-2 max-w-[75%]">
@@ -14,7 +13,6 @@ function SentMessage({ message, timestamp }: SentMessageProps) {
             </p>
           ))}
         </div>
-        <span className="text-sm text-gray-400">{timestamp}</span>
       </div>
     </div>
   );

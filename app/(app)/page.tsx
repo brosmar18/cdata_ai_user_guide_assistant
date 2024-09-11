@@ -9,7 +9,6 @@ import ResponseMessage from "../../components/Response";
 
 interface Message {
   id: string;
-  created_at: string;
   content: { type: string; text: { value: string } }[];
   metadata?: { fromUser?: string };
 }
@@ -27,7 +26,6 @@ function ChatPage() {
   const [pollingRun, setPollingRun] = useState(false);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchMessages = useCallback(async () => {
     if (!userThread) {
@@ -37,7 +35,6 @@ function ChatPage() {
     }
 
     const { threadId } = userThread;
-    console.log("Fetching messages for threadId:", threadId);
 
     try {
       const response = await axios.post<{
@@ -53,11 +50,7 @@ function ChatPage() {
         return;
       }
 
-      const newMessages = response.data.messages.sort((a, b) =>
-        new Date(a.created_at).getTime() > new Date(b.created_at).getTime()
-          ? 1
-          : -1
-      );
+      const newMessages = response.data.messages;
 
       setMessages(newMessages);
     } catch (error) {
@@ -68,7 +61,6 @@ function ChatPage() {
     }
   }, [userThread]);
 
-  // Polling run status
   const pollRunStatus = async (threadId: string, runId: string) => {
     setPollingRun(true);
 
@@ -89,7 +81,7 @@ function ChatPage() {
         if (response.data.run.status === "completed") {
           clearInterval(intervalRef.current!);
           setPollingRun(false);
-          fetchMessages(); // Fetch messages once the run is complete
+          fetchMessages();
         } else if (response.data.run.status === "failed") {
           clearInterval(intervalRef.current!);
           setPollingRun(false);
@@ -131,7 +123,6 @@ function ChatPage() {
     }
   };
 
-  // Send message
   const sendMessage = async () => {
     if (!userThread || sending || !assistant || !message.trim()) {
       toast.error("Failed to send message. Invalid state.");
@@ -167,7 +158,7 @@ function ChatPage() {
 
       const runId = await startRun(userThread.threadId, assistant.assistantId);
       if (runId) {
-        pollRunStatus(userThread.threadId, runId); // Poll for responses after the run starts
+        pollRunStatus(userThread.threadId, runId);
       }
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -216,24 +207,15 @@ function ChatPage() {
               <SentMessage
                 key={message.id}
                 message={message.content[0]?.text?.value ?? ""}
-                timestamp={new Date(message.created_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
               />
             ) : (
               <ResponseMessage
                 key={message.id}
                 message={message.content[0]?.text?.value ?? ""}
-                timestamp={new Date(message.created_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
               />
             )
           )
         )}
-        <div ref={messagesEndRef} />
       </div>
       <div className="bg-gray-800 p-4 rounded-lg shadow-lg">
         <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">

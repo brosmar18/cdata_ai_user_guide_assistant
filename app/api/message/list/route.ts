@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   try {
     const response = await openai.beta.threads.messages.list(threadId);
 
-    // Remove citation markers like   from all messages
+
     const sanitizedMessages = response.data.map((message: any) => ({
       ...message,
       content: message.content.map((content: any) => ({

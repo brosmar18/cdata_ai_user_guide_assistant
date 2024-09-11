@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
+export async function POST(req: NextRequest) {
+  const { threadId, assistantId } = await req.json();
 
-export async function POST(req: NextRequest){
-    const { threadId, assistantId } = await req.json();
-
+  // Log the assistantId being used
+  console.log("Assistant ID:", assistantId);
 
   if (!threadId || !assistantId) {
     return NextResponse.json(
@@ -17,7 +18,7 @@ export async function POST(req: NextRequest){
 
   try {
     const run = await openai.beta.threads.runs.create(threadId, {
-        assistant_id: assistantId,
+      assistant_id: assistantId,
     });
     
     console.log("From openai run", run);

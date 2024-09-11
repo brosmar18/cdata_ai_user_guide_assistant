@@ -5,10 +5,9 @@ import Image from "next/image";
 
 interface ResponseMessageProps {
   message: string;
-  timestamp: string;
 }
 
-function ResponseMessage({ message, timestamp }: ResponseMessageProps) {
+function ResponseMessage({ message }: ResponseMessageProps) {
   const [contentHtml, setContentHtml] = useState<string>("");
 
   useEffect(() => {
@@ -37,7 +36,6 @@ function ResponseMessage({ message, timestamp }: ResponseMessageProps) {
           className="px-5 py-3 rounded-lg bg-gray-100 text-gray-900 shadow-md"
           dangerouslySetInnerHTML={{ __html: contentHtml }}
         />
-        <span className="text-sm text-gray-400">{timestamp}</span>
       </div>
     </div>
   );
