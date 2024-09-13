@@ -105,6 +105,7 @@ function ChatPage() {
 
     intervalRef.current = setInterval(pollStatus, POLLING_FREQUENCY_MS);
   };
+  
 
   const startRun = async (
     threadId: string,
